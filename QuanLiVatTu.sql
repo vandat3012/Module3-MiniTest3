@@ -126,19 +126,19 @@ insert into order_detail values
 
 insert into import_detail values
 (1,1,1,61.2,90000,"no"),
-(2,2,1,50,95000,"no"),
+(2,2,1,4,95000,"no"),
 (3,1,2,222,111000,"no"),
 (4,3,5,111,115000,"no"),
 (5,3,3,112,111000,"no"),
 (6,1,2,50,111111,"no");
 
 insert into export_detail values
-(1,1,1,44,200000,"no"),
-(2,2,1,44,200000,"no"),
-(3,3,2,44,200000,"no"),
-(4,1,3,44,200000,"no"),
-(5,2,2,44,200000,"no"),
-(6,3,1,44,200000,"no");
+(1,1,1,44,1100000,"no"),
+(2,2,1,42,1200000,"no"),
+(3,3,2,34,300000,"no"),
+(4,1,3,42,3300000,"no"),
+(5,2,2,40,220000,"no"),
+(6,3,1,41,2110000,"no");
 
 -- Câu 1. Tạo view có tên vw_CTPNHAP bao gồm các thông tin sau: số phiếu nhập hàng, mã vật tư, số lượng nhập, đơn giá nhập, thành tiền nhập.
 create view vw_CTPNHAP as
@@ -158,8 +158,65 @@ select * from vw_CTPNHAP_VT;
 
 -- Câu 3. Tạo view có tên vw_CTPNHAP_VT_PN bao gồm các thông tin sau: số phiếu nhập hàng, ngày nhập hàng, số đơn đặt hàng, mã vật tư, tên vật tư, số lượng nhập, đơn giá nhập, thành tiền nhập.
 create view vw_CTPNHAP_VT_PN as
-select id.import_detail_id,oi.import_date, oi.import_code, ,m.material_code,m.material_name ,id.import_number,id.import_price, (id.import_number * id.import_price ) as "money"
+select id.import_detail_id,oi.import_date, oi.import_code,od.order_number ,m.material_code,m.material_name ,id.import_number,id.import_price, (id.import_number * id.import_price ) as "money"
 from import_detail id
 join order_import oi on oi.import_id = id.import_id
-join material m on m.material_id = id.material_id;
+join material m on m.material_id = id.material_id
+join order_detail od on od.material_id = m.material_id;
 select * from vw_CTPNHAP_VT_PN;
+
+-- Câu 4. Tạo view có tên vw_CTPNHAP_VT_PN_DH bao gồm các thông tin sau: số phiếu nhập hàng, ngày nhập hàng, số đơn đặt hàng, mã nhà cung cấp, mã vật tư, tên vật tư, số lượng nhập, đơn giá nhập, thành tiền nhập.
+create view vw_CTPNHAP_VT_PN_DH as
+select id.import_detail_id,oi.import_date, oi.import_code,od.order_number, s.supplier_code ,m.material_code,m.material_name ,id.import_number,id.import_price, (id.import_number * id.import_price ) as "money"
+from import_detail id
+join order_import oi on oi.import_id = id.import_id
+join material m on m.material_id = id.material_id
+join order_detail od on od.material_id = m.material_id
+join `order` o on o.order_id = od.order_id
+join supplier s on s.supplier_id = o.supplier_id;
+select * from vw_CTPNHAP_VT_PN_DH;
+
+-- Câu 5. Tạo view có tên vw_CTPNHAP_loc  bao gồm các thông tin sau: số phiếu nhập hàng, mã vật tư, số lượng nhập, đơn giá nhập, thành tiền nhập. Và chỉ liệt kê các chi tiết nhập có số lượng nhập > 5.
+create view vw_CTPNHAP_loc as
+select id.import_detail_id, oi.import_code, m.material_code, id.import_number,id.import_price, (id.import_number * id.import_price ) as "money"
+from import_detail id
+join order_import oi on oi.import_id = id.import_id
+join material m on m.material_id = id.material_id
+where id.import_number > 5;
+select * from vw_CTPNHAP_loc;
+
+-- Câu 6. Tạo view có tên vw_CTPNHAP_VT_loc bao gồm các thông tin sau: số phiếu nhập hàng, mã vật tư, tên vật tư, số lượng nhập, đơn giá nhập, thành tiền nhập. Và chỉ liệt kê các chi tiết nhập vật tư có đơn vị tính là kg.
+create view vw_CTPNHAP_VT_loc as
+select id.import_detail_id, oi.import_code, m.material_code,m.material_name ,m.material_unit,id.import_number,id.import_price, (id.import_number * id.import_price ) as "money"
+from import_detail id
+join order_import oi on oi.import_id = id.import_id
+join material m on m.material_id = id.material_id
+where m.material_unit like "kg";
+select * from vw_CTPNHAP_VT_loc;
+
+-- Câu 7. Tạo view có tên vw_CTPXUAT bao gồm các thông tin sau: số phiếu xuất hàng, mã vật tư, số lượng xuất, đơn giá xuất, thành tiền xuất.
+create view vw_CTPXUAT as
+select ed.export_detail_id, oe.export_code, m.material_code, ed.export_number,ed.export_price, (ed.export_number * ed.export_price ) as "money"
+from export_detail ed
+left join order_export oe on oe.export_id = ed.export_id
+left join material m on m.material_id = ed.material_id;
+select * from vw_CTPXUAT;
+
+-- Câu 8. Tạo view có tên vw_CTPXUAT_VT bao gồm các thông tin sau: số phiếu xuất hàng, mã vật tư, tên vật tư, số lượng xuất, đơn giá xuất.
+create view vw_CTPXUAT_VT as
+select ed.export_detail_id, oe.export_code, m.material_code,m.material_name ,ed.export_number,ed.export_price
+from export_detail ed
+left join order_export oe on oe.export_id = ed.export_id
+left join material m on m.material_id = ed.material_id;
+select * from vw_CTPXUAT_VT;
+
+-- Câu 9. Tạo view có tên vw_CTPXUAT_VT_PX bao gồm các thông tin sau: số phiếu xuất hàng, tên khách hàng, mã vật tư, tên vật tư, số lượng xuất, đơn giá xuất.
+create view vw_CTPXUAT_VT_PX as
+select ed.export_detail_id, oe.export_code,oe.export_name_customer, m.material_code,m.material_name ,ed.export_number,ed.export_price
+from export_detail ed
+left join order_export oe on oe.export_id = ed.export_id
+left join material m on m.material_id = ed.material_id;
+select * from vw_CTPXUAT_VT_PX;
+
+
+-- II, Tạo các stored procedure
