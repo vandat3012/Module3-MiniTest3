@@ -90,8 +90,8 @@ insert into material values
 (5,"M5","đồng","kg",100000);
 
 insert into inventory values
-(1,1,111.2,23,45),
-(2,2,333.2,231,115),
+(1,1,111,23,45),
+(2,2,333,131,115),
 (3,3,444,213,245),
 (4,4,333,213,345),
 (5,5,114,123,145);
@@ -218,5 +218,65 @@ left join order_export oe on oe.export_id = ed.export_id
 left join material m on m.material_id = ed.material_id;
 select * from vw_CTPXUAT_VT_PX;
 
-
 -- II, Tạo các stored procedure
+
+-- Câu 1. Tạo Stored procedure (SP) cho biết tổng số lượng cuối của vật tư với mã vật tư là tham số vào.
+
+DELIMITER // 
+create procedure get_total_final(in material_code varchar(50))
+begin
+select m.material_code,((iv.inventory_number_origin + iv.inventory_number_total_imported) - iv.inventory_number_total_exported) as total_final
+from inventory iv 
+join material m on m.material_id = iv.material_id
+where m.material_code = material_code;
+end //
+DELIMITER ;
+call get_total_final ('M2');
+
+-- Câu 2. Tạo SP cho biết tổng tiền xuất của vật tư với mã vật tư là tham số vào, out là tổng tiền xuất
+
+delimiter //
+create procedure get_total_money_export_by_code (in material_code varchar(50),out total_money_export float)
+begin
+select m.material_code, sum(ed.export_number * ed.export_price) as total_money_export
+from export_detail ed 
+join material m on m.material_id = ed.material_id
+group by m.material_code
+having m.material_code = material_code;
+end //
+delimiter ;
+call get_total_money_export_by_code ("M1",@total_money_export);
+
+-- Câu 3. Tạo SP cho biết tổng số lượng đặt theo số đơn hàng với số đơn hàng là tham số vào
+delimiter //
+create procedure get_total_order (in order_code varchar(50))
+begin
+select o.order_code, sum(od.order_number) as total_order_number
+from order_detail od
+join `order` o on o.order_id = od.order_id
+group by o.order_code
+having o.order_code = order_code;
+end //
+delimiter ; 
+call get_total_order("O3");
+
+-- Câu 4. Tạo SP dùng để thêm một đơn đặt hàng.
+
+delimiter //
+create procedure create_order (in id int, order_code varchar(50),in order_date date,in supplier_id int)
+begin 
+insert into `order` values
+(id,order_code,order_date,supplier_id);
+end //
+delimiter ; 
+call create_order (6,"O5",'2000-11-11',2);
+
+-- Câu 5. Tạo SP dùng để thêm một chi tiết đơn đặt hàng.
+delimiter //
+create procedure create_detail_order (in id int,in order_id int,in material_id int,in order_number float)
+begin 
+insert into order_detail values
+(id,order_id,material_id,order_number);
+end //
+delimiter ;
+call create_detail_order (7,2,3,22);
